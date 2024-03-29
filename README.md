@@ -1,6 +1,4 @@
-# Flask API README
-
-This README provides information on how to set up and use the Flask API for generating certificates.
+# Flask API
 
 ## Prerequisites
 - Python 3 installed on your system
