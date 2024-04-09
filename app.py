@@ -37,7 +37,7 @@ def generate_certificate():
     groups = request.form.get('groups')
 
     # Execute nebula-cert command to generate certificate
-    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{name}" -ip "{ip_address}" --groups "{groups}" -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
+    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{name}" -ip "{ip_address}" --groups "{groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
 
     try:
         subprocess.check_output(command, shell=True)
