@@ -1,10 +1,15 @@
 import os
 import subprocess
+import re
+import shlex
 from flask import Flask, request, send_file
  
 nebula_pub_key_format_checks_enabled = True
 # To improve security avoid giving too much info back to the user, keep False. To debug set to True.
 detailed_error_response = True
+
+#allowed characters in the group field (no spaces!)
+allowed_characters = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_')
 
 app = Flask(__name__)
 
@@ -18,8 +23,34 @@ def generate_certificate():
         return "No file provided in the request.", 400
 
     # Save the uploaded .pub file
-    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, file.filename)
+    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, shlex.quote(file.filename))
     file.save(pub_key_path)
+
+    # Get parameters from request
+    name = request.form.get('name')
+    ip_address = request.form.get('ip_address')
+    groups = request.form.get('groups')
+    
+    # Input validation
+    if not os.path.isfile(pub_key_path):
+        if detailed_error_response:
+            return "Bad file name!", 400
+        else: 
+            return "Error generating certificate!", 400
+        
+    if not validate_ip_with_subnet(ip_address):
+        if detailed_error_response:
+            return "Bad IP, make sure to have IP/subnet!", 400
+        else: 
+            return "Error generating certificate!", 400
+
+    # Input filtering    
+    filtered_groups = ''.join(char for char in groups if char in allowed_characters)
+
+    # Sanitize inputs
+    sanitized_name = shlex.quote(name)
+    sanitized_ip_address = shlex.quote(ip_address)
+    sanitized_groups = shlex.quote(filtered_groups)
     
     if nebula_pub_key_format_checks_enabled:
         # Validate the format of the .pub key
@@ -31,19 +62,15 @@ def generate_certificate():
             else: 
                 return "Error generating certificate!", 400
 
-    # Get parameters from request
-    name = request.form.get('name')
-    ip_address = request.form.get('ip_address')
-    groups = request.form.get('groups')
 
     # Execute nebula-cert command to generate certificate
-    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{name}" -ip "{ip_address}" --groups "{groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
+    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
 
     try:
         subprocess.check_output(command, shell=True)
         certificate_path = name + '.crt'
     except subprocess.CalledProcessError as e:
-        os.remove(pub_key_path)  # Removing current .pub file
+        os.remove(pub_key_path)  # Removing created .pub file
         return f"Error generating certificate!", 500
 
     # Send the generated certificate file to the client
@@ -54,6 +81,9 @@ def generate_certificate():
     os.remove(pub_key_path)
 
     return response
+
+def validate_ip_with_subnet(ip_with_subnet):
+    return re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$', ip_with_subnet)
 
 def validate_pub_key_format(pub_key_path):
     # Check if the file exists
@@ -82,3 +112,4 @@ def validate_pub_key_format(pub_key_path):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
