@@ -81,4 +81,4 @@ def validate_pub_key_format(pub_key_path):
         return {'success': False, 'message': "Error: Key is not correctly formatted."}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
