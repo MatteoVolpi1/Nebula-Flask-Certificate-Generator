@@ -18,6 +18,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Print fake test secrets
+        run: |
+          echo "Username: ${{ secrets.FAKE_USERNAME }}"
+          echo "Token: ${{ secrets.FAKE_TOKEN }}"
+
           
       - name: Build and push API Docker image
         run: |
