@@ -7,7 +7,7 @@ from flask import Flask, request, send_file
 nebula_pub_key_format_checks_enabled = True
 # To improve security avoid giving too much info back to the user, keep False. To debug set to True.
 detailed_error_response = True
-
+#test
 #allowed characters in the group field (no spaces!)
 allowed_characters = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_')
 
