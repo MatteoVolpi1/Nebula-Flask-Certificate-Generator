@@ -3,6 +3,7 @@ import subprocess
 import re
 import shlex
 from flask import Flask, request, send_file
+from werkzeug.utils import secure_filename
  
 nebula_pub_key_format_checks_enabled = True
 # To improve security avoid giving too much info back to the user, keep False. To debug set to True.
@@ -29,7 +30,7 @@ def generate_certificate():
     if not fullpath.startswith(CERTIFICATE_DIRECTORY):
         return "Not allowed", 400
     
-    sanitized_pub_key_path = sanitize_string(pub_key_path)
+    sanitized_pub_key_path = secure_filename(sanitize_string(pub_key_path))
     
     #  Save the uploaded .pub file
     file.save(sanitized_pub_key_path)
