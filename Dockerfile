@@ -16,7 +16,7 @@ RUN wget https://github.com/slackhq/nebula/releases/download/v1.7.2/nebula-linux
     rm nebula-linux-amd64.tar.gz
 
 # Install the necessary dependencies
-RUN pip install flask werkzeug
+RUN pip install flask werkzeug ipaddress
 
 # Expose the port where the Flask API will run
 EXPOSE 5000

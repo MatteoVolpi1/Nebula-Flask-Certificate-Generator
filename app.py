@@ -1,5 +1,6 @@
 import os
 import subprocess
+import ipaddress
 import re
 import shlex
 from flask import Flask, request, send_file
@@ -39,6 +40,9 @@ def generate_certificate():
     ip_address = request.form.get('ip_address')
     groups = request.form.get('groups')
 
+    # Input filtering    
+    filtered_groups = ''.join(char for char in groups if char in allowed_characters)
+
     # Sanitize inputs
     sanitized_name = secure_filename(shlex.quote(name))
     sanitized_ip_address = shlex.quote(ip_address)
@@ -56,9 +60,6 @@ def generate_certificate():
             return "Bad IP, make sure to have IP/subnet!", 400
         else: 
             return "Error generating certificate!", 400
-
-    # Input filtering    
-    filtered_groups = ''.join(char for char in groups if char in allowed_characters)
     
     if nebula_pub_key_format_checks_enabled:
         # Validate the format of the .pub key
@@ -102,7 +103,11 @@ def sanitize_string(input_string):
     return clean_string
 
 def validate_ip_with_subnet(ip_with_subnet):
-    return re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$', ip_with_subnet)
+    try:
+        ipaddress.ip_network(ip_with_subnet, strict=False)
+        return True
+    except:
+        return False
 
 def validate_pub_key_format(pub_key_path):
     # Check if the file exists
