@@ -18,7 +18,6 @@ CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates
 
 @app.route('/generate_certificate', methods=['POST'])
 def generate_certificate():
-    # Check if input are dangerous and sanitize them
 
     file = request.files.get('file')
     if not file:
@@ -32,13 +31,18 @@ def generate_certificate():
     
     sanitized_pub_key_path = secure_filename(sanitize_string(pub_key_path))
     
-    #  Save the uploaded .pub file
+    # Save the uploaded .pub file
     file.save(sanitized_pub_key_path)
 
     # Get parameters from request
     name = request.form.get('name')
     ip_address = request.form.get('ip_address')
     groups = request.form.get('groups')
+
+    # Sanitize inputs
+    sanitized_name = secure_filename(shlex.quote(name))
+    sanitized_ip_address = shlex.quote(ip_address)
+    sanitized_groups = shlex.quote(filtered_groups)
     
     # Input validation
     if not os.path.isfile(sanitized_pub_key_path):
@@ -55,11 +59,6 @@ def generate_certificate():
 
     # Input filtering    
     filtered_groups = ''.join(char for char in groups if char in allowed_characters)
-
-    # Sanitize inputs
-    sanitized_name = shlex.quote(name)
-    sanitized_ip_address = shlex.quote(ip_address)
-    sanitized_groups = shlex.quote(filtered_groups)
     
     if nebula_pub_key_format_checks_enabled:
         # Validate the format of the .pub key
@@ -77,7 +76,7 @@ def generate_certificate():
 
     try:
         subprocess.check_output(command, shell=True)
-        certificate_path = name + '.crt'
+        certificate_path = sanitized_name + '.crt'
     except subprocess.CalledProcessError as e:
         os.remove(sanitized_pub_key_path)  # Removing created .pub file
         return f"Error generating certificate!", 500
