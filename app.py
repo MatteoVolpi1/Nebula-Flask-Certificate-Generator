@@ -17,6 +17,8 @@ CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates
 
 @app.route('/generate_certificate', methods=['POST'])
 def generate_certificate():
+    # Check if input are dangerous and sanitize them
+
     # Check if request contains a file
     file = request.files.get('file')
     if not file:
@@ -24,6 +26,11 @@ def generate_certificate():
 
     # Save the uploaded .pub file
     pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, shlex.quote(file.filename))
+    
+    fullpath = os.path.normpath(pub_key_path)
+    if not fullpath.startswith(CERTIFICATE_DIRECTORY):
+        return "Not allowed", 400
+
     file.save(pub_key_path)
 
     # Get parameters from request
