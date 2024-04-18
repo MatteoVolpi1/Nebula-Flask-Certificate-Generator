@@ -19,19 +19,20 @@ CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates
 def generate_certificate():
     # Check if input are dangerous and sanitize them
 
-    # Check if request contains a file
     file = request.files.get('file')
     if not file:
         return "No file provided in the request.", 400
-
-    # Save the uploaded .pub file
-    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, shlex.quote(file.filename))
     
+    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, shlex.quote(file.filename))
+
     fullpath = os.path.normpath(pub_key_path)
     if not fullpath.startswith(CERTIFICATE_DIRECTORY):
         return "Not allowed", 400
-
-    file.save(pub_key_path)
+    
+    sanitized_pub_key_path = sanitize_string(pub_key_path)
+    
+    #  Save the uploaded .pub file
+    file.save(sanitized_pub_key_path)
 
     # Get parameters from request
     name = request.form.get('name')
@@ -39,7 +40,7 @@ def generate_certificate():
     groups = request.form.get('groups')
     
     # Input validation
-    if not os.path.isfile(pub_key_path):
+    if not os.path.isfile(sanitized_pub_key_path):
         if detailed_error_response:
             return "Bad file name!", 400
         else: 
@@ -61,9 +62,9 @@ def generate_certificate():
     
     if nebula_pub_key_format_checks_enabled:
         # Validate the format of the .pub key
-        validation_result = validate_pub_key_format(pub_key_path)
+        validation_result = validate_pub_key_format(sanitized_pub_key_path)
         if not validation_result['success']:
-            os.remove(pub_key_path)  # Removing current .pub file
+            os.remove(sanitized_pub_key_path)  # Removing current .pub file
             if detailed_error_response:
                 return validation_result['message'], 400
             else: 
@@ -71,13 +72,13 @@ def generate_certificate():
 
 
     # Execute nebula-cert command to generate certificate
-    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
+    command = f'nebula-cert sign -in-pub {sanitized_pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
 
     try:
         subprocess.check_output(command, shell=True)
         certificate_path = name + '.crt'
     except subprocess.CalledProcessError as e:
-        os.remove(pub_key_path)  # Removing created .pub file
+        os.remove(sanitized_pub_key_path)  # Removing created .pub file
         return f"Error generating certificate!", 500
 
     # Send the generated certificate file to the client
@@ -85,9 +86,20 @@ def generate_certificate():
 
     # Removing .crt and .pub files from current folder
     os.remove(certificate_path)
-    os.remove(pub_key_path)
+    os.remove(sanitized_pub_key_path)
 
     return response
+
+def sanitize_string(input_string):
+    # Strip underscores
+    clean_string = input_string.replace('_', '')
+    # Replace spaces with underscores
+    clean_string = clean_string.replace(' ', '_')
+    # Remove non-alphanumeric characters except underscores
+    clean_string = re.sub(r'[^a-zA-Z0-9_]', '', clean_string)
+    # Lowercase the string
+    clean_string = clean_string.lower()
+    return clean_string
 
 def validate_ip_with_subnet(ip_with_subnet):
     return re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$', ip_with_subnet)
