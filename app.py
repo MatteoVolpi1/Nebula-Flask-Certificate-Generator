@@ -71,10 +71,8 @@ def generate_certificate():
             else: 
                 return "Error generating certificate!", 400
 
-
     # Execute nebula-cert command to generate certificate
-    #command = f'nebula-cert sign -in-pub {sanitized_pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
-    command = f'nebula-cert sign -in-pub {sanitized_pub_key_path} -name "{sanitized_name}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
+    command = f'nebula-cert sign -in-pub {sanitized_pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
 
     try:
         subprocess.check_output(command, shell=True)
