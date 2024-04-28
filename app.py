@@ -4,7 +4,6 @@ import ipaddress
 import re
 import shlex
 from flask import Flask, request, send_file
-from werkzeug.utils import secure_filename
 
 nebula_pub_key_format_checks_enabled = True
 # To improve security avoid giving too much info back to the user, keep False. To debug set to True.
@@ -30,7 +29,7 @@ def generate_certificate():
         return "No key provided in the request.", 400
 
     # Sanitize inputs
-    sanitized_name = secure_filename(shlex.quote(name))
+    sanitized_name = sanitize_string(shlex.quote(name))
     sanitized_ip_address = shlex.quote(ip_address)
     sanitized_groups = shlex.quote(''.join(char for char in groups if char in allowed_characters))
     sanitized_pub_key = pub_key
