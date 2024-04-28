@@ -5,7 +5,7 @@ import re
 import shlex
 from flask import Flask, request, send_file
 from werkzeug.utils import secure_filename
- 
+
 nebula_pub_key_format_checks_enabled = True
 # To improve security avoid giving too much info back to the user, keep False. To debug set to True.
 detailed_error_response = True
@@ -20,36 +20,31 @@ CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates
 @app.route('/generate_certificate', methods=['POST'])
 def generate_certificate():
 
-    file = request.files.get('file')
-    if not file:
-        return "No file provided in the request.", 400
-    
-    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, shlex.quote(file.filename))
-
-    fullpath = os.path.normpath(pub_key_path)
-    if not fullpath.startswith(CERTIFICATE_DIRECTORY):
-        return "Not allowed", 400
-    
-    sanitized_pub_key_path = secure_filename(sanitize_string(pub_key_path))
-    
-    # Save the uploaded .pub file
-    file.save(sanitized_pub_key_path)
-
-    # Get parameters from request
+    # Get other parameters from request
     name = request.form.get('name')
     ip_address = request.form.get('ip_address')
     groups = request.form.get('groups')
+    pub_key = request.form.get('key')
 
-    # Input filtering    
-    filtered_groups = ''.join(char for char in groups if char in allowed_characters)
+    print(pub_key)
+    
+    if not pub_key:
+        return "No key provided in the request.", 400
 
     # Sanitize inputs
     sanitized_name = secure_filename(shlex.quote(name))
     sanitized_ip_address = shlex.quote(ip_address)
-    sanitized_groups = shlex.quote(filtered_groups)
+    sanitized_groups = shlex.quote(''.join(char for char in groups if char in allowed_characters))
+    sanitized_pub_key = pub_key
+
+    # Save the uploaded .pub file
+    pub_key_path = os.path.join(CERTIFICATE_DIRECTORY, "temp.pub")
+    key_file = open(pub_key_path, "w")
+    key_file.write(sanitized_pub_key)
+    key_file.close()
     
     # Input validation
-    if not os.path.isfile(sanitized_pub_key_path):
+    if not os.path.isfile(pub_key_path):
         if detailed_error_response:
             return "Bad file name!", 400
         else: 
@@ -63,22 +58,22 @@ def generate_certificate():
     
     if nebula_pub_key_format_checks_enabled:
         # Validate the format of the .pub key
-        validation_result = validate_pub_key_format(sanitized_pub_key_path)
+        validation_result = validate_pub_key_format(pub_key_path)
         if not validation_result['success']:
-            os.remove(sanitized_pub_key_path)  # Removing current .pub file
+            os.remove(pub_key_path)  # Removing current .pub file
             if detailed_error_response:
                 return validation_result['message'], 400
             else: 
                 return "Error generating certificate!", 400
 
     # Execute nebula-cert command to generate certificate
-    command = f'nebula-cert sign -in-pub {sanitized_pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
+    command = f'nebula-cert sign -in-pub {pub_key_path} -name "{sanitized_name}" -ip "{sanitized_ip_address}" --groups "{sanitized_groups}" -duration 8h -ca-key /etc/nebula/ca.key -ca-crt /etc/nebula/ca.crt'
 
     try:
         subprocess.check_output(command, shell=True)
         certificate_path = sanitized_name + '.crt'
     except subprocess.CalledProcessError as e:
-        os.remove(sanitized_pub_key_path)  # Removing created .pub file
+        os.remove(pub_key_path)  # Removing created .pub file
         return f"Error generating certificate!", 500
 
     # Send the generated certificate file to the client
@@ -86,7 +81,7 @@ def generate_certificate():
 
     # Removing .crt and .pub files from current folder
     os.remove(certificate_path)
-    os.remove(sanitized_pub_key_path)
+    os.remove(pub_key_path)
 
     return response
 
@@ -135,4 +130,3 @@ def validate_pub_key_format(pub_key_path):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-

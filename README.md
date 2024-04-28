@@ -19,6 +19,14 @@ To generate certificates using the API, you can make a POST request with the nec
 
 ```bash
 curl -X POST -F "file=@<Hostname.pub>" -F "name=<Hostname>" -F "ip_address=<Nebula_ip_address>" -F "groups=<Nebula_security_groups>" http://localhost:5000/generate_certificate
+
+curl -X POST \
+  --data-binary "key=<key_contents>" \
+  -d "name=<Hostname>" \
+  -d "ip_address=<Nebula_ip_address>" \
+  -d "groups=<Nebula_security_groups>" \
+  http://localhost:5000/generate_certificate
+
 ```
 
 ### Parameters:
