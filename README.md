@@ -19,7 +19,7 @@ To generate certificates using the API, you can make a POST request with the nec
 
 ```bash
 curl -X POST \
-  --data-binary "key=<key_contents>" \
+  --data-binary "key=<Nebula_pubkey_contents>" \
   -d "name=<Hostname>" \
   -d "ip_address=<Nebula_ip_address>" \
   -d "groups=<Nebula_security_groups>" \
@@ -28,7 +28,7 @@ curl -X POST \
 ```
 
 ### Parameters:
-- `file`: The public key file to be included in the certificate. Make sure to replace `Hostname.pub` with the path to your Nebula public key file.
+- `key`: Contents of the Host's Nebula public key (text form).
 - `name`: The name to be included in the certificate.
 - `ip_address`: The IP address to be included in the certificate. Replace `<ip_address>` with the actual Nebula IP address.
 - `groups`: Comma-separated list of groups for the certificate.
