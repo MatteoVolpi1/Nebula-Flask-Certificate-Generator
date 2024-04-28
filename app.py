@@ -26,8 +26,6 @@ def generate_certificate():
     groups = request.form.get('groups')
     pub_key = request.form.get('key')
 
-    print(pub_key)
-    
     if not pub_key:
         return "No key provided in the request.", 400
 
