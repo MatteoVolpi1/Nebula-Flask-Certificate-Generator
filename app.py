@@ -19,6 +19,8 @@ CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates
 @app.route('/generate_certificate', methods=['GET', 'POST'])
 def generate_certificate():
 
+    print("Request received")
+
     if request.method == 'GET':
         return 'Send a POST request with data', 200
 
