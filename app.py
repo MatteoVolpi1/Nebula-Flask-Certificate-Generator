@@ -16,8 +16,11 @@ app = Flask(__name__)
 
 CERTIFICATE_DIRECTORY = ''  # No need to specify a directory if the certificates are already in the current directory
 
-@app.route('/generate_certificate', methods=['POST'])
+@app.route('/generate_certificate', methods=['GET', 'POST'])
 def generate_certificate():
+
+    if request.method == 'GET':
+        return 'Send a POST request with data', 200
 
     # Get other parameters from request
     name = request.form.get('name')
